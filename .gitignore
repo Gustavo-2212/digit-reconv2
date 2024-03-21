@@ -1,0 +1,5 @@
+.deps
+.vscode
+build
+src/__pycache__
+tmp
