@@ -80,10 +80,10 @@ foo@bar:~$ make exec
 
 ### Conclusões
 
-Podemos ver que a rede neural consegue reconhecer alguns dígitos novos, porém poderia se sair bem melhor caso os seguintes recursos fossem desenvolvidos:
-- Normalização dos dados de entrada, uma vez que por ser uma imagem, tem valores de 0 a 255;
-- Usar mais amostras para treinamento, em vez de apenas 5 de cada dígito;
-- Testar outras arquiteturas de rede neural;
+Podemos ver que a rede neural consegue reconhecer alguns dígitos novos, porém poderia se sair bem melhor caso os seguintes recursos fossem desenvolvidos:\
+[x] Normalização dos dados de entrada, uma vez que por ser uma imagem, tem valores de 0 a 255 **[-1.0, 1.0]**;\
+[x] Usar mais amostras para treinamento, em vez de apenas 5 de cada dígito **(50 de cada)**;\
+[] Testar outras arquiteturas de rede neural;\
 Essas são apenas algumas sugestões de melhoria.
 
 🚀🔍💡

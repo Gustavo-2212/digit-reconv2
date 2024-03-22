@@ -5,18 +5,18 @@
 
 /* ======================================================================= */
 /*               Definição de valores constantes                           */
-const char *imagens[] = {
-    "0_1.bmp\0", "0_2.bmp\0", "0_3.bmp\0", "0_4.bmp\0", "0_5.bmp\0",
-    "1_1.bmp\0", "1_2.bmp\0", "1_3.bmp\0", "1_4.bmp\0", "1_5.bmp\0",
-    "2_1.bmp\0", "2_2.bmp\0", "2_3.bmp\0", "2_4.bmp\0", "2_5.bmp\0",
-    "3_1.bmp\0", "3_2.bmp\0", "3_3.bmp\0", "3_4.bmp\0", "3_5.bmp\0",
-    "4_1.bmp\0", "4_2.bmp\0", "4_3.bmp\0", "4_4.bmp\0", "4_5.bmp\0",
-    "5_1.bmp\0", "5_2.bmp\0", "5_3.bmp\0", "5_4.bmp\0", "5_5.bmp\0",
-    "6_1.bmp\0", "6_2.bmp\0", "6_3.bmp\0", "6_4.bmp\0", "6_5.bmp\0",
-    "7_1.bmp\0", "7_2.bmp\0", "7_3.bmp\0", "7_4.bmp\0", "7_5.bmp\0",
-    "8_1.bmp\0", "8_2.bmp\0", "8_3.bmp\0", "8_4.bmp\0", "8_5.bmp\0",
-    "9_1.bmp\0", "9_2.bmp\0", "9_3.bmp\0", "9_4.bmp\0", "9_5.bmp\0"
-};
+// const char *imagens[] = {
+//     "0_1.bmp\0", "0_2.bmp\0", "0_3.bmp\0", "0_4.bmp\0", "0_5.bmp\0",
+//     "1_1.bmp\0", "1_2.bmp\0", "1_3.bmp\0", "1_4.bmp\0", "1_5.bmp\0",
+//     "2_1.bmp\0", "2_2.bmp\0", "2_3.bmp\0", "2_4.bmp\0", "2_5.bmp\0",
+//     "3_1.bmp\0", "3_2.bmp\0", "3_3.bmp\0", "3_4.bmp\0", "3_5.bmp\0",
+//     "4_1.bmp\0", "4_2.bmp\0", "4_3.bmp\0", "4_4.bmp\0", "4_5.bmp\0",
+//     "5_1.bmp\0", "5_2.bmp\0", "5_3.bmp\0", "5_4.bmp\0", "5_5.bmp\0",
+//     "6_1.bmp\0", "6_2.bmp\0", "6_3.bmp\0", "6_4.bmp\0", "6_5.bmp\0",
+//     "7_1.bmp\0", "7_2.bmp\0", "7_3.bmp\0", "7_4.bmp\0", "7_5.bmp\0",
+//     "8_1.bmp\0", "8_2.bmp\0", "8_3.bmp\0", "8_4.bmp\0", "8_5.bmp\0",
+//     "9_1.bmp\0", "9_2.bmp\0", "9_3.bmp\0", "9_4.bmp\0", "9_5.bmp\0"
+// };
 
 const char *imagens_teste[] = {
     "0_teste.bmp\0", "1_teste.bmp\0", "2_teste.bmp\0", "3_teste.bmp\0", "4_teste.bmp\0",
@@ -51,7 +51,19 @@ int gera_entradas(void) {
     
     for(int i = 0; i < QTD_ENTRADAS; i++) {
         char nome_arq[20] = "data/";
-        strcat(nome_arq, imagens[i]);
+        
+        //strcat(nome_arq, imagens[i]);
+        
+        char digito[20];
+        sprintf(digito, "%d", (i/NUM_CLASSES));
+        char amostra[20];
+        sprintf(amostra, "%d", (i%NUM_CLASSES)+1);
+
+
+        strcat(amostra, ".bmp");
+        strcat(digito, "_");
+        strcat(digito, amostra);
+        strcat(nome_arq, digito);
 
         criaBMP(nome_arq, entradas[i]);
     }

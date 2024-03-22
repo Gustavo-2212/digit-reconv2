@@ -4,26 +4,40 @@
 #include <time.h>
 #include <stdlib.h>
 
+
+/* ======================================================================= */
+/*               Diretivas constantes                                      */
 #define CICLOS_MAX              (10000)
-#define TAXA_DE_APRENDIZAGEM    (0.001)
+#define TAXA_DE_APRENDIZAGEM    (0.003)
 #define ERRO_MINIMO             (0.002)
 
+
+/* ======================================================================= */
+/*               Definição de estruturas                                   */
 struct erro_s {
     double *Erros;
     int ciclos;
 };
 
+
+/* ======================================================================= */
+/*               Protótipo das funções                                     */
 struct erro_s treina_MPL(void);
 void testa_MPL(void);
 void salvar_pesos(const char nome_arq[20], double w[NEURONIOS_CAMADA_SAIDA][NEURONIOS_CAMADA_INTERNA], double b[NEURONIOS_CAMADA_SAIDA],
                     double w_int[NEURONIOS_CAMADA_INTERNA][TAMANHO_IMG], double b_int[NEURONIOS_CAMADA_INTERNA]);
 void salvar_erros(const char nome_arq[], double erros[], int ciclos);
 double calcula_erro(double Y[], int saida);
-double calcula_erro_inicial(void);
-double *calcula_saida(uint8_t entrada[]);
+double *calcula_saida(double entrada[]);
+void normaliza_entradas(void);
 
+
+/* ======================================================================= */
+/*               Função Main                                               */
 int main(void) {
     gera_entradas();
+    normaliza_entradas();
+
     gera_saidas();
 
     struct erro_s rs = treina_MPL();
@@ -42,6 +56,12 @@ int main(void) {
 }
 
 
+/* ======================================================================= */
+/*               Implementação das funções                                 */
+
+/*
+        Executa o treino da rede neural, retornando o vetor de Erros conforme os ciclos aumentam
+*/
 struct erro_s treina_MPL(void) {
     srand(time(NULL));
     int ciclos = 0;
@@ -69,15 +89,22 @@ struct erro_s treina_MPL(void) {
 
     salvar_pesos("./tmp/pesos_iniciais.txt" ,w, b, w_int, b_int);
 
-    double erro = calcula_erro_inicial();
-    Erros[0] = erro;
+    double erro = 0;
+    for(int i = 0; i < QTD_ENTRADAS; i++) {
+        double *Yinit = calcula_saida(entradas_normalizadas[i]);
+        erro += calcula_erro(Yinit, i/NUM_CLASSES);
+
+        free(Yinit);
+    }
+    Erros[0] = erro / (2 * QTD_ENTRADAS);
+
     while (ciclos < CICLOS_MAX) {
         double E = 0;
         ciclos++;
 
         for(int digito = 0; digito < QTD_ENTRADAS; digito++) {
 
-            uint8_t *entrada = entradas[digito];
+            double *entrada = entradas_normalizadas[digito];
             int8_t *saida = saidas[digito / NUM_CLASSES];
             
 
@@ -109,7 +136,7 @@ struct erro_s treina_MPL(void) {
             */
 
            /* Cálculo da média do erro quadrático */
-            E = calcula_erro(Y, (digito/NUM_CLASSES));   
+            E += calcula_erro(Y, (digito/NUM_CLASSES));   
 
             /* Fase de Retropropagação */
             
@@ -177,8 +204,7 @@ struct erro_s treina_MPL(void) {
             }   
         }
 
-        erro = E / QTD_ENTRADAS;
-        Erros[ciclos] = erro;
+        Erros[ciclos] = E / (2 * QTD_ENTRADAS);
     }
 
     printf("Fim do treinamento!\n");
@@ -194,7 +220,12 @@ struct erro_s treina_MPL(void) {
     return rs;
 }
 
-double *calcula_saida(uint8_t entrada[]) {
+/*
+        Função para fazer o cálculo do vetor de saída da rede neural com base em uma entrada e nos
+        pesos calculados até o momento de chamada dessa função.
+        Retorna o ponteiro de onde começa o vetor com os resultados dos 10 neurônios de saída
+*/
+double *calcula_saida(double entrada[]) {
     double Z[NEURONIOS_CAMADA_INTERNA];
     double *Y = (double*) malloc(sizeof(double) * NEURONIOS_CAMADA_SAIDA);
     double soma;
@@ -219,29 +250,26 @@ double *calcula_saida(uint8_t entrada[]) {
     return Y;
 }
 
+/*
+        Calcula o erro médio quadrático, dado a resposta do modelo para uma determinada entrada e uma
+        saída para ser comparada.
+*/
 double calcula_erro(double Y[], int saida) {
-    double erro;
+    double erro = 0;
     for(int i = 0; i < NEURONIOS_CAMADA_SAIDA; i++) {
         erro += pow(saidas[saida][i] - Y[i], 2);
     }
 
-    return sqrt(erro / NEURONIOS_CAMADA_SAIDA);
+    return erro;
 }
 
-double calcula_erro_inicial() {
-    double erro;
-    for(int i = 0; i < QTD_ENTRADAS; i++) {
-        double *Y = calcula_saida(entradas[i]);
-        erro += calcula_erro(Y, (i/NUM_CLASSES));
-    }
-
-    return erro / QTD_ENTRADAS;
-}
-
+/*
+        Cria um arquivo para salvar os pesos calculados até então.
+*/
 void salvar_pesos(const char nome_arq[20], double w[NEURONIOS_CAMADA_SAIDA][NEURONIOS_CAMADA_INTERNA], double b[NEURONIOS_CAMADA_SAIDA],
                     double w_int[NEURONIOS_CAMADA_INTERNA][TAMANHO_IMG], double b_int[NEURONIOS_CAMADA_INTERNA]) {
     FILE *arquivo = fopen(nome_arq, "a"); // Abre o arquivo para adicionar conteúdo (append)
-    if (arquivo == NULL) {
+    if (!arquivo) {
         printf("Erro ao abrir o arquivo pesos.txt.\n");
         return;
     }
@@ -281,21 +309,42 @@ void salvar_pesos(const char nome_arq[20], double w[NEURONIOS_CAMADA_SAIDA][NEUR
     fclose(arquivo); // Fecha o arquivo
 }
 
+/*
+        Faz o teste da rede neural já treinada (pesos ajustados) para o conjunto de dados para teste.
+*/
 void testa_MPL(void) {
-    for(int digito = 0; digito < NUM_DIGITOS; digito++) {
-        uint8_t *entrada_teste = entradas_teste[digito];
-        double *Y = calcula_saida(entrada_teste);
+    double Z[NEURONIOS_CAMADA_INTERNA];
+    double soma;
 
-        /* Calcula a saída dos neurônios da camada de saída */
+    
+    for(int digito = 0; digito < NUM_DIGITOS; digito++) {
+        double *entrada = entradas_teste_normalizada[digito];
+
+        for(int neuronio = 0; neuronio < NEURONIOS_CAMADA_INTERNA; neuronio++) {
+            soma = b_int[neuronio];
+            for(int byte = 0; byte < TAMANHO_IMG; byte++) {
+                soma += entrada[byte] * w_int[neuronio][byte];
+            }
+            Z[neuronio] = SIGMOIDE(soma);
+        }
+        
         for(int neuronio = 0; neuronio < NEURONIOS_CAMADA_SAIDA; neuronio++) {
-            saida_obtida[digito][neuronio] = Y[neuronio];
+            soma = b[neuronio];
+            for(int saida_internos = 0; saida_internos < NEURONIOS_CAMADA_INTERNA; saida_internos++) {
+                soma += Z[saida_internos] * w[neuronio][saida_internos];
+            }
+            saida_obtida[digito][neuronio] = SIGMOIDE(soma);
         }
     }
 }
 
+/*
+        Salva os erros em um arquivo para ser enviado ao arquivo "graphic.py" para
+        que o gráfico do erro seja gerado.
+*/
 void salvar_erros(const char nome_arq[], double erros[], int ciclos) {
     FILE *arquivo = fopen(nome_arq, "w");
-    if(arquivo == NULL) {
+    if(!arquivo) {
         printf("Falha ao abrir o arquivo %s.\n", nome_arq);
         return;
     }
@@ -306,4 +355,22 @@ void salvar_erros(const char nome_arq[], double erros[], int ciclos) {
     }
 
     fclose(arquivo);
+}
+
+/*
+    Normaliza os dados de entrada para treinamento e para teste (0 - 255)
+    em valores entre -1.0 a 1.0, onde, respectivamente, representam as cores preta e branca.
+*/
+void normaliza_entradas(void) {
+    for(int i = 0; i < QTD_ENTRADAS; i++) {
+        for(int j = 0; j < TAMANHO_IMG; j++) {
+            entradas_normalizadas[i][j] = NORMALIZA(entradas[i][j]);
+        }
+    }
+
+    for(int i = 0; i < NUM_DIGITOS; i++) {
+        for(int j = 0; j < TAMANHO_IMG; j++) {
+            entradas_teste_normalizada[i][j] = NORMALIZA(entradas_teste[i][j]);
+        }
+    }
 }
