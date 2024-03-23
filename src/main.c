@@ -7,8 +7,8 @@
 
 /* ======================================================================= */
 /*               Diretivas constantes                                      */
-#define CICLOS_MAX              (10000)
-#define TAXA_DE_APRENDIZAGEM    (0.003)
+#define CICLOS_MAX              (100000)
+#define TAXA_DE_APRENDIZAGEM    (0.002)
 #define ERRO_MINIMO             (0.002)
 
 
@@ -76,8 +76,7 @@ struct erro_s treina_MPL(void) {
         b_int[i]  = (double)(rand() % 1000) / 1000 - 0.5;
     }
     /* delta_int = [0, 0, 0, ..., 0], length=NEURONIOS_CAMADA_INTERNA */
-    double *delta_int = (double*)calloc(NEURONIOS_CAMADA_INTERNA, sizeof(double));
-
+    double delta_int[NEURONIOS_CAMADA_INTERNA][NEURONIOS_CAMADA_SAIDA];
 
     /* Inicialização dos pesos dos neurônios da camada de saída */
     for(int i = 0; i < NEURONIOS_CAMADA_SAIDA; i++) {
@@ -96,7 +95,7 @@ struct erro_s treina_MPL(void) {
 
         free(Yinit);
     }
-    Erros[0] = erro / (2 * QTD_ENTRADAS);
+    Erros[0] = (erro / (2 * QTD_ENTRADAS));
 
     while (ciclos < CICLOS_MAX) {
         double E = 0;
@@ -159,26 +158,36 @@ struct erro_s treina_MPL(void) {
             }
 
             /* Cálculo para a atualização dos pesos dos neurônios da camada interna */
+            double soma_delta_w = 0;
+            for(int i = 0; i < NEURONIOS_CAMADA_SAIDA; i++) {
+                soma_delta_w += delta_w[i];
+            }
+
             for(int neuronio_int = 0; neuronio_int < NEURONIOS_CAMADA_INTERNA; neuronio_int++) {
-                double soma_delta_w = 0;
-                double soma_w = 0;
                 for(int neuronio_out = 0; neuronio_out < NEURONIOS_CAMADA_SAIDA; neuronio_out++) {
-                    soma_delta_w += delta_w[neuronio_out];
-                    soma_w += w[neuronio_out][neuronio_int];
+                    delta_int[neuronio_int][neuronio_out] = soma_delta_w * w[neuronio_out][neuronio_int] * 0.5 * (1 + Z[neuronio_int]) * (1 - Z[neuronio_int]);
                 }
-                delta_int[neuronio_int] = soma_delta_w * soma_w * 0.5 * (1 + Z[neuronio_int]) * (1 - Z[neuronio_int]);
+            }
+
+            double soma_delta_int[NEURONIOS_CAMADA_INTERNA];
+            for(int i = 0; i < NEURONIOS_CAMADA_INTERNA; i++) {
+                double soma = 0;
+                for(int j = 0; j < NEURONIOS_CAMADA_SAIDA; j++) {
+                    soma += delta_int[i][j];
+                }
+                soma_delta_int[i] = soma;
             }
 
             double Delta_w_int[NEURONIOS_CAMADA_INTERNA][TAMANHO_IMG];
             double Delta_b_int[NEURONIOS_CAMADA_INTERNA];
             for(int neuronio_int = 0; neuronio_int < NEURONIOS_CAMADA_INTERNA; neuronio_int++) {
                 for(int amostra = 0; amostra < TAMANHO_IMG; amostra++) {
-                    Delta_w_int[neuronio_int][amostra] = TAXA_DE_APRENDIZAGEM * delta_int[neuronio_int] * entrada[amostra];
+                    Delta_w_int[neuronio_int][amostra] = TAXA_DE_APRENDIZAGEM * soma_delta_int[neuronio_int] * entrada[amostra];
                 }
             }
 
             for(int neuronio_int = 0; neuronio_int < NEURONIOS_CAMADA_INTERNA; neuronio_int++) {
-                Delta_b_int[neuronio_int] = TAXA_DE_APRENDIZAGEM * delta_int[neuronio_int];
+                Delta_b_int[neuronio_int] = TAXA_DE_APRENDIZAGEM * soma_delta_int[neuronio_int];
             }
 
             /* Atualização dos pesos da camada de saída */
@@ -204,7 +213,7 @@ struct erro_s treina_MPL(void) {
             }   
         }
 
-        Erros[ciclos] = E / (2 * QTD_ENTRADAS);
+        Erros[ciclos] = (E / (2 * QTD_ENTRADAS));
     }
 
     printf("Fim do treinamento!\n");
