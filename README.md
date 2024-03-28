@@ -40,7 +40,9 @@ As MLPs não têm um único idealizador. O desenvolvimento das MLPs foi uma evol
 
 A função sigmóide bipolar, também conhecida como função de ativação bipolar, é uma função matemática usada em redes neurais como uma função de ativação. Sua fórmula é:
 
-\[ f(x) = \frac{2}{1 + e^{-x}} - 1 \]
+$
+    f(x) = \frac{2}{1 + e^{-x}} - 1
+$
 
 Esta função mapeia os valores de entrada para o intervalo [-1, 1]. Ela é suave e diferenciável em todos os pontos, o que a torna adequada para o treinamento de redes neurais utilizando algoritmos de otimização baseados em gradiente, como o backpropagation.
 
